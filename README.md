@@ -1,3 +1,5 @@
+![alt tag](temp_logo.png?raw=true "DSP3")
+
 The Beagle Project
 ===
 
