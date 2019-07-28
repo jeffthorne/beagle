@@ -1,28 +1,36 @@
 package images
 
 type Image struct {
-	Id         string
-	Name       string
-	Repository string
-	Tag        string
-	layers     []Layer
-	ConfigFile 	  map[string]interface{}
+	Id         		string
+	Name       		string
+	Repository 		string
+	Tag        		string
+	ManifestFile 	[]byte
+	ConfigFile 		[]byte
+	Layers 			map[string]Layer
 }
 
 type Layer struct {
-	id      int64
-	version string
-	files   map[string][]byte
+	Id      	string 	 //directory name
+	Version		string
+	Digest  	[32]byte   //sha256 on layer diff contents
+	Files   	map[string][]byte
 }
 
+func NewLayer() *Layer{
+	Files := make(map[string][]byte)
+	return &Layer{Files:Files}
+}
 
 type ImageAnalyzer struct {
-	JsonFiles    map[string][]byte
-	Layers        map[string]map[string][]byte
+	Image		Image
+	JsonFiles 	map[string][]byte
+	Layers    	map[string]map[string][]byte
 }
 
-func NewImageAnalyzer() *ImageAnalyzer{
+func NewImageAnalyzer() *ImageAnalyzer {
+	Image := Image{}
 	JsonFiles := make(map[string][]byte)
 	Layers := make(map[string]map[string][]byte)
-	return &ImageAnalyzer{JsonFiles, Layers}
+	return &ImageAnalyzer{Image, JsonFiles, Layers}
 }

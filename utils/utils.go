@@ -2,6 +2,8 @@ package utils
 
 import (
 	"archive/tar"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,9 +21,8 @@ var (
 	xzHeader    = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
 )
 
-func ProcessTar(filepath string) {
+func ProcessTar(filepath string) images.Image{
 
-	image := images.Image{}
 	imageAnalyer := images.NewImageAnalyzer()
 
 	tarFile, err := os.Open(filepath) //Open the tar file
@@ -45,42 +46,54 @@ func ProcessTar(filepath string) {
 
 		filename := header.Name
 		filename = strings.TrimPrefix(filename, "./")
-
 		switch header.Typeflag {
 		case tar.TypeDir:
-			fmt.Printf("%s is a directory\n", filename)
 			continue
 		case tar.TypeSymlink, tar.TypeLink, tar.TypeReg:
+			layerId := ""
+			f, err := ioutil.ReadAll(tr)
+			if err != nil{
+				fmt.Println(err)
+			}
 
-			fmt.Printf("%s is a file\n", filename)
+			if strings.Contains(filename, "json") {
 
-			if strings.Contains(filename, "json"){
-				layerId := ""
+				if filename == "manifest.json" {
+					ParseManifest(f, &imageAnalyer.Image)
+					layerId = imageAnalyer.Image.Id
+					imageAnalyer.JsonFiles[filename] = f
+				} else if strings.Contains(filename, ".") {
+					ParseConfig(f, &imageAnalyer.Image)
+					layerId = strings.Split(filename, ".")[0]
+					imageAnalyer.JsonFiles[layerId+".json"] = f
+				} else {
+					layerId = getLayerId(f)
+					imageAnalyer.JsonFiles[layerId+".json"] = f
+				}
 
-				if f, err := ioutil.ReadAll(tr); err == nil {
-					if filename == "manifest.json"{
-						ParseManifest(f, &image)
-						layerId = image.Id
-						imageAnalyer.JsonFiles[filename] = f
-					}else if strings.Contains(filename, ".") {
-						ParseConfig(f, &image)
-						layerId = strings.Split(filename, ".")[0]
-						imageAnalyer.JsonFiles[layerId + ".json"] = f
-					}else{
-						layerId = getLayerId(f)
-						imageAnalyer.JsonFiles[layerId + ".json"] = f
-					}
 
-					if imageAnalyer.Layers[layerId] == nil{
-						imageAnalyer.Layers[layerId] = make(map[string][]byte)
-					}
-					imageAnalyer.Layers[layerId][filename] = f
+			}else{
+
+				if filename != "repositories" {
+					layerId = strings.Split(filename, "/")[0]
+					filename = strings.Split(filename, "/")[1]
 				}
 			}
 
+			if layerId != "" {
+				if imageAnalyer.Layers[layerId] == nil {
+					imageAnalyer.Layers[layerId] = make(map[string][]byte)
+				}
+
+				if strings.Contains(filename, "/json"){
+					filename = strings.Split(filename, "/")[1]
+				}
+				imageAnalyer.Layers[layerId][filename] = f
 
 
-		default:
+			}
+
+
 
 		}
 
@@ -88,23 +101,23 @@ func ProcessTar(filepath string) {
 			fmt.Println(err)
 		}
 	}
-	fmt.Printf("Image Id is %s\n", image.Id)
 
+	return makeImageStruct(imageAnalyer)
 
 }
 
-func getLayerId(f []byte) string{
+func getLayerId(f []byte) string {
 
 	var result map[string]interface{}
 	json.Unmarshal(f, &result)
 	return result["id"].(string)
 }
 
-func ParseConfig(f []byte, image *images.Image){
+func ParseConfig(f []byte, image *images.Image) {
 
 	var result map[string]interface{}
 	json.Unmarshal(f, &result)
-	image.ConfigFile = result
+	image.ConfigFile = f
 }
 
 func ParseManifest(f []byte, image *images.Image) {
@@ -114,8 +127,41 @@ func ParseManifest(f []byte, image *images.Image) {
 	json.Unmarshal(f, &result)
 	image.Id = strings.Split(result[0]["Config"].(string), ".")[0]
 	repoTags := result[0]["RepoTags"].([]interface{})[0].(string)
-	image.Repository = strings.Split(repoTags, "/")[0]
-	image.Name = strings.Split(strings.Split(repoTags, "/")[1], ":")[0]
+	if strings.Contains(repoTags, "/") {
+		image.Repository = strings.Split(repoTags, "/")[0]
+		image.Name = strings.Split(strings.Split(repoTags, "/")[1], ":")[0]
+	}else{
+		image.Repository = ""
+		image.Name = strings.Split(strings.Split(repoTags, ":")[0], ":")[0]
+	}
+
 	image.Tag = strings.Split(repoTags, ":")[1]
+
+}
+
+
+func makeImageStruct(ia *images.ImageAnalyzer) images.Image{
+	image := ia.Image
+
+	for k, v := range ia.Layers{
+
+		if _, ok := v["manifest.json"]; ok{
+			image.Id = k
+			image.ManifestFile = v["manifest.json"]
+		}else if _, ok := v["layer.tar"]; ok{
+			layer := images.Layer{}
+			layer.Files = v
+			layer.Digest = sha256.Sum256(v["layer.tar"])
+			digestString := hex.EncodeToString(layer.Digest[:])
+			if image.Layers == nil{
+				image.Layers = make(map[string]images.Layer)
+			}
+			image.Layers[digestString] = layer
+		}
+
+
+	}
+
+	return image
 
 }
