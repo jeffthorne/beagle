@@ -22,6 +22,8 @@ var (
 func ProcessTar(filepath string) {
 
 	image := images.Image{}
+	imageAnalyer := images.NewImageAnalyzer()
+
 	tarFile, err := os.Open(filepath) //Open the tar file
 	defer tarFile.Close()
 
@@ -49,12 +51,34 @@ func ProcessTar(filepath string) {
 			fmt.Printf("%s is a directory\n", filename)
 			continue
 		case tar.TypeSymlink, tar.TypeLink, tar.TypeReg:
+
 			fmt.Printf("%s is a file\n", filename)
-			//d, _ := ioutil.ReadAll(tr)
-			//data[filename] = d
-			if filename == "manifest.json" {
-				ParseManifest(tr, &image)
+
+			if strings.Contains(filename, "json"){
+				layerId := ""
+
+				if f, err := ioutil.ReadAll(tr); err == nil {
+					if filename == "manifest.json"{
+						ParseManifest(f, &image)
+						layerId = image.Id
+						imageAnalyer.JsonFiles[filename] = f
+					}else if strings.Contains(filename, ".") {
+						ParseConfig(f, &image)
+						layerId = strings.Split(filename, ".")[0]
+						imageAnalyer.JsonFiles[layerId + ".json"] = f
+					}else{
+						layerId = getLayerId(f)
+						imageAnalyer.JsonFiles[layerId + ".json"] = f
+					}
+
+					if imageAnalyer.Layers[layerId] == nil{
+						imageAnalyer.Layers[layerId] = make(map[string][]byte)
+					}
+					imageAnalyer.Layers[layerId][filename] = f
+				}
 			}
+
+
 
 		default:
 
@@ -65,23 +89,31 @@ func ProcessTar(filepath string) {
 		}
 	}
 	fmt.Printf("Image Id is %s\n", image.Id)
-	fmt.Println(image)
+
 
 }
 
-func ParseManifest(manifestFile *tar.Reader, image *images.Image) {
+func getLayerId(f []byte) string{
+
+	var result map[string]interface{}
+	json.Unmarshal(f, &result)
+	return result["id"].(string)
+}
+
+func ParseConfig(f []byte, image *images.Image){
+
+	var result map[string]interface{}
+	json.Unmarshal(f, &result)
+	image.ConfigFile = result
+}
+
+func ParseManifest(f []byte, image *images.Image) {
 
 	var result []map[string]interface{}
-	f, err := ioutil.ReadAll(manifestFile)
-
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	json.Unmarshal(f, &result)
 	image.Id = strings.Split(result[0]["Config"].(string), ".")[0]
 	repoTags := result[0]["RepoTags"].([]interface{})[0].(string)
-	fmt.Println(repoTags)
 	image.Repository = strings.Split(repoTags, "/")[0]
 	image.Name = strings.Split(strings.Split(repoTags, "/")[1], ":")[0]
 	image.Tag = strings.Split(repoTags, ":")[1]
