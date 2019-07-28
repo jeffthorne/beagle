@@ -6,7 +6,9 @@ type Image struct {
 	Repository 		string
 	Tag        		string
 	ManifestFile 	[]byte
+	ManifestJson	map[string]interface{}
 	ConfigFile 		[]byte
+	ConfigJson      map[string]interface{}
 	Layers 			map[string]Layer
 }
 
@@ -14,7 +16,12 @@ type Layer struct {
 	Id      	string 	 //directory name
 	Version		string
 	Digest  	[32]byte   //sha256 on layer diff contents
+	DigestString string
 	Files   	map[string][]byte
+	Author	    string
+	CreatedBy   string
+	Created     string
+	Size        uint64
 }
 
 func NewLayer() *Layer{

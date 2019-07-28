@@ -3,15 +3,15 @@ package utils
 import (
 	"archive/tar"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jeffthorne/beagle/images"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"github.com/jeffthorne/beagle/images"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 	xzHeader    = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
 )
 
-func ProcessTar(filepath string) images.Image{
+func ProcessTar(filepath string) *images.Image{
 
 	imageAnalyer := images.NewImageAnalyzer()
 
@@ -102,7 +102,8 @@ func ProcessTar(filepath string) images.Image{
 		}
 	}
 
-	return makeImageStruct(imageAnalyer)
+	makeImageStruct(&imageAnalyer.Image, *imageAnalyer)
+	return &imageAnalyer.Image
 
 }
 
@@ -118,6 +119,9 @@ func ParseConfig(f []byte, image *images.Image) {
 	var result map[string]interface{}
 	json.Unmarshal(f, &result)
 	image.ConfigFile = f
+	image.ConfigJson = result
+
+
 }
 
 func ParseManifest(f []byte, image *images.Image) {
@@ -136,12 +140,14 @@ func ParseManifest(f []byte, image *images.Image) {
 	}
 
 	image.Tag = strings.Split(repoTags, ":")[1]
+	image.ManifestJson = result[0]
+
+	fmt.Printf("%T", image.ManifestJson["Layers"])
 
 }
 
 
-func makeImageStruct(ia *images.ImageAnalyzer) images.Image{
-	image := ia.Image
+func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 
 	for k, v := range ia.Layers{
 
@@ -152,16 +158,55 @@ func makeImageStruct(ia *images.ImageAnalyzer) images.Image{
 			layer := images.Layer{}
 			layer.Files = v
 			layer.Digest = sha256.Sum256(v["layer.tar"])
-			digestString := hex.EncodeToString(layer.Digest[:])
+			layer.DigestString = hex.EncodeToString(layer.Digest[:])
 			if image.Layers == nil{
 				image.Layers = make(map[string]images.Layer)
 			}
-			image.Layers[digestString] = layer
+			layer.Size = uint64(binary.Size(v["layer.tar"]))
+
+			image.Layers[k] = layer
+
 		}
 
 
+
+	}
+	GetHistory(image)
+
+}
+
+
+func GetHistory(image *images.Image) {
+
+	history := image.ConfigJson["history"].([]interface{})
+	var tempHistory []map[string]interface{}
+
+	for _,v := range history {
+		if _, ok := v.(map[string]interface{})["empty_layer"]; !ok {
+				tempHistory = append(tempHistory, v.(map[string]interface{}))
+		}
 	}
 
-	return image
+	imagesLayers := image.ManifestJson["Layers"].([]interface{})
+
+	for k, _ := range image.Layers {
+		fmt.Println("KEY: ", k)
+	}
+
+
+	for i, v := range imagesLayers{
+		layerDigest := strings.Split(v.(string), "/")[0]
+		l := image.Layers[layerDigest]
+		layerHistory := tempHistory[i]
+
+		if v, ok := layerHistory["author"]; ok{
+			l.Author = v.(string)
+		}
+		l.CreatedBy = layerHistory["created_by"].(string)
+		l.Created = layerHistory["created"].(string)
+		image.Layers[layerDigest] = l
+
+	}
+
 
 }

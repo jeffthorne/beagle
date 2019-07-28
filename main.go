@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/jeffthorne/beagle/ui"
 	"github.com/jeffthorne/beagle/utils"
+	"github.com/rivo/tview"
 	"os"
 )
 
@@ -13,14 +15,16 @@ func main() {
 	fmt.Println("Processing image at:", filePath)
 	image := utils.ProcessTar(filePath)
 
-	for k, v := range image.Layers{
-		fmt.Println(k)
 
-		for k, _ := range v.Files {
-			fmt.Println(k)
-		}
-		fmt.Println("\n\n")
-	}
+	app := tview.NewApplication()
+
+	flex := tview.NewFlex().
+		AddItem(ui.Layers(image), 0, 1, true).
+		AddItem(tview.NewList(), 0, 1, false)
+
+	app.SetRoot(flex, true).Run()
+
+
 
 
 }
