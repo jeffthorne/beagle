@@ -12,11 +12,11 @@ Beagle is a container image inspection utility.
 open up to others.
 
 
-##Version 0.001a output so far
+## Version 0.001a output so far
 ![alt tag](v1.png?raw=true "v1")
 
 
-##Installation
+## Installation
 go get github.com/jeffthorne/beagle
 
 go run main.go /path_to_container_tar_file
