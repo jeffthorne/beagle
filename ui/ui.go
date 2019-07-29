@@ -36,7 +36,7 @@ func Layers(image *images.Image) []string{
 	count := 1
 	var b bytes.Buffer
 	w := tabwriter.NewWriter(&b, 7,1,1,' ', tabwriter.AlignRight)
-	fmt.Fprintf(w, "   \t%v\t\t%v\t", "Size", "Command")
+	fmt.Fprintf(w, "\t%v\t\t%v\t", "Size", "Command")
 	w.Flush()
 	layers = append(layers, b.String())
 	b.Reset()
@@ -51,7 +51,7 @@ func Layers(image *images.Image) []string{
 		l := image.Layers[digest]
 
 
-		fmt.Fprintf(w, "[%d]\t%s\t\t%s\t", count, humanize.Bytes(l.Size), StringMaxSize(l.CreatedBy[11:], 45))
+		fmt.Fprintf(w, "\t%s\t\t%s\t",  humanize.Bytes(l.Size), StringMaxSize(l.CreatedBy[11:], 45))
 		w.Flush()
 		layers = append(layers, b.String())
 		b.Reset()
@@ -68,15 +68,29 @@ func Layers(image *images.Image) []string{
 	return layers
 }
 
+func ImageInfo(image *images.Image) string{
+	var b bytes.Buffer
+	w := tabwriter.NewWriter(&b, 1,1,1,'\t', tabwriter.AlignRight)
+	fmt.Fprintf(w, "\n   %s/%s:%s", image.Repository, image.Name, image.Tag)
+	w.Flush()
+	return b.String()
+}
+
 func LayerParagraph(layerNumber int, image *images.Image) string{
 
+	if layerNumber < 1{
+		layerNumber = 1
+	}
+
 	var b bytes.Buffer
+	w := tabwriter.NewWriter(&b, 1,1,1,'\t', tabwriter.AlignRight)
 	imagesLayers := image.ManifestJson["Layers"].([]interface{})
 	layer := imagesLayers[layerNumber - 1]
 	digest := strings.Split(layer.(string), "/")[0]
 	l := image.Layers[digest]
-
-	b.WriteString("\nDigest: " + l.DigestString + "\n\nCommand:\n" + l.CreatedBy[11:])
+	fmt.Fprintf(w, "\n[Digest](fg:green,mode:bold) -> %s\n\n\t[Command](fg:green,mode:bold)\n\t%s", l.DigestString, l.CreatedBy[11:])
+	//b.WriteString("\n\t\tDigest: " + l.DigestString + "\n\n\tCommand:\n" + l.CreatedBy[11:])
+	w.Flush()
 	return b.String()
 
 }

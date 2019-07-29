@@ -1,4 +1,4 @@
-![alt tag](temp_logo.png?raw=true "Beagle")
+![alt tag](beagle.png?raw=true "Beagle")
 
 The Beagle Project
 ===

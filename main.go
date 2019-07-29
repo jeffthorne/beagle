@@ -34,6 +34,7 @@ func main() {
 	//l.SetRect(0, 0, 150, 50)
 	l.TextStyle.Fg = ui.ColorWhite
 	l.SelectedRowStyle.Fg = ui.ColorBlue
+	l.SelectedRow = 1
 
 
 //	draw := func(count int) {
@@ -42,15 +43,23 @@ func main() {
 	//}
 
 	p := widgets.NewParagraph()
-	p.Text = "<> This row has 3 columns\n<- Widgets can be stacked up like left side\n<- Stacked widgets are treated as a single widget"
+	p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 	p.Title = "Layer Details"
+
+	i := widgets.NewParagraph()
+	i.Text = dashboard.ImageInfo(image)
+	i.Title = "Image Info"
 
 	grid := ui.NewGrid()
 	termWidth, termHeight := ui.TerminalDimensions()
 	grid.SetRect(0,0, termWidth, termHeight)
 
+
 	grid.Set(
-		ui.NewRow(0.45,
+		ui.NewRow(0.10,
+		          ui.NewCol(0.6, i),
+		),
+		ui.NewRow(0.35,
 			       ui.NewCol(0.6, l),
 			       ),
 		ui.NewRow(0.55,
@@ -74,6 +83,9 @@ func main() {
 			p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 		case "k", "<Up>":
 			l.ScrollUp()
+			if l.SelectedRow < 1{
+				l.SelectedRow = 1
+			}
 			p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 		case "<C-d>":
 			l.ScrollHalfPageDown()
