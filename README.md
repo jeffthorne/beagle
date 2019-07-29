@@ -1,4 +1,4 @@
-![alt tag](temp_logo.png?raw=true "DSP3")
+![alt tag](temp_logo.png?raw=true "Beagle")
 
 The Beagle Project
 ===
@@ -10,3 +10,7 @@ Beagle is a container image inspection utility.
 
 *Note: Out of the gate only tested against Docker image format but will
 open up to others.
+
+
+##Version 0.001a output so far
+![alt tag](v1.png?raw=true "v1")

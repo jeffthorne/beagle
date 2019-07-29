@@ -142,8 +142,6 @@ func ParseManifest(f []byte, image *images.Image) {
 	image.Tag = strings.Split(repoTags, ":")[1]
 	image.ManifestJson = result[0]
 
-	fmt.Printf("%T", image.ManifestJson["Layers"])
-
 }
 
 
@@ -188,10 +186,6 @@ func GetHistory(image *images.Image) {
 	}
 
 	imagesLayers := image.ManifestJson["Layers"].([]interface{})
-
-	for k, _ := range image.Layers {
-		fmt.Println("KEY: ", k)
-	}
 
 
 	for i, v := range imagesLayers{
