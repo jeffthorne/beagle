@@ -41,14 +41,22 @@ func main() {
 //		ui.Render(l)
 	//}
 
+	p := widgets.NewParagraph()
+	p.Text = "<> This row has 3 columns\n<- Widgets can be stacked up like left side\n<- Stacked widgets are treated as a single widget"
+	p.Title = "Layer Details"
+
 	grid := ui.NewGrid()
 	termWidth, termHeight := ui.TerminalDimensions()
 	grid.SetRect(0,0, termWidth, termHeight)
 
 	grid.Set(
-		ui.NewRow(0.35,
-			       ui.NewCol(1.0, l),
-			       ))
+		ui.NewRow(0.45,
+			       ui.NewCol(0.6, l),
+			       ),
+		ui.NewRow(0.55,
+			ui.NewCol(0.6,p),
+			))
+
 	ui.Render(grid)
 //	tickerCount := 1
 //	draw(tickerCount)
@@ -63,8 +71,10 @@ func main() {
 			return
 		case "j", "<Down>":
 			l.ScrollDown()
+			p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 		case "k", "<Up>":
 			l.ScrollUp()
+			p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 		case "<C-d>":
 			l.ScrollHalfPageDown()
 		case "<C-u>":
@@ -73,6 +83,8 @@ func main() {
 			l.ScrollPageDown()
 		case "<C-b>":
 			l.ScrollPageUp()
+		case "<Enter>":
+			p.Text = dashboard.LayerParagraph(l.SelectedRow, image)
 		case "g":
 			if previousKey == "g" {
 				l.ScrollTop()
