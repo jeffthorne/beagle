@@ -7,11 +7,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/jeffthorne/beagle/images"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/jeffthorne/beagle/images"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 	xzHeader    = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
 )
 
-func ProcessTar(filepath string) *images.Image{
+func ProcessTar(filepath string) *images.Image {
 
 	imageAnalyer := images.NewImageAnalyzer()
 
@@ -29,7 +30,8 @@ func ProcessTar(filepath string) *images.Image{
 	defer tarFile.Close()
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("File could not be found at: %s\n", filepath)
+		os.Exit(1)
 	}
 
 	tr := tar.NewReader(tarFile)
@@ -52,7 +54,7 @@ func ProcessTar(filepath string) *images.Image{
 		case tar.TypeSymlink, tar.TypeLink, tar.TypeReg:
 			layerId := ""
 			f, err := ioutil.ReadAll(tr)
-			if err != nil{
+			if err != nil {
 				fmt.Println(err)
 			}
 
@@ -71,8 +73,7 @@ func ProcessTar(filepath string) *images.Image{
 					imageAnalyer.JsonFiles[layerId+".json"] = f
 				}
 
-
-			}else{
+			} else {
 
 				if filename != "repositories" {
 					layerId = strings.Split(filename, "/")[0]
@@ -85,15 +86,12 @@ func ProcessTar(filepath string) *images.Image{
 					imageAnalyer.Layers[layerId] = make(map[string][]byte)
 				}
 
-				if strings.Contains(filename, "/json"){
+				if strings.Contains(filename, "/json") {
 					filename = strings.Split(filename, "/")[1]
 				}
 				imageAnalyer.Layers[layerId][filename] = f
 
-
 			}
-
-
 
 		}
 
@@ -121,7 +119,6 @@ func ParseConfig(f []byte, image *images.Image) {
 	image.ConfigFile = f
 	image.ConfigJson = result
 
-
 }
 
 func ParseManifest(f []byte, image *images.Image) {
@@ -134,7 +131,7 @@ func ParseManifest(f []byte, image *images.Image) {
 	if strings.Contains(repoTags, "/") {
 		image.Repository = strings.Split(repoTags, "/")[0]
 		image.Name = strings.Split(strings.Split(repoTags, "/")[1], ":")[0]
-	}else{
+	} else {
 		image.Repository = ""
 		image.Name = strings.Split(strings.Split(repoTags, ":")[0], ":")[0]
 	}
@@ -144,20 +141,19 @@ func ParseManifest(f []byte, image *images.Image) {
 
 }
 
-
 func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 
-	for k, v := range ia.Layers{
+	for k, v := range ia.Layers {
 
-		if _, ok := v["manifest.json"]; ok{
+		if _, ok := v["manifest.json"]; ok {
 			image.Id = k
 			image.ManifestFile = v["manifest.json"]
-		}else if _, ok := v["layer.tar"]; ok{
+		} else if _, ok := v["layer.tar"]; ok {
 			layer := images.Layer{}
 			layer.Files = v
 			layer.Digest = sha256.Sum256(v["layer.tar"])
 			layer.DigestString = hex.EncodeToString(layer.Digest[:])
-			if image.Layers == nil{
+			if image.Layers == nil {
 				image.Layers = make(map[string]images.Layer)
 			}
 			layer.Size = uint64(binary.Size(v["layer.tar"]))
@@ -166,34 +162,30 @@ func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 
 		}
 
-
-
 	}
 	GetHistory(image)
 
 }
-
 
 func GetHistory(image *images.Image) {
 
 	history := image.ConfigJson["history"].([]interface{})
 	var tempHistory []map[string]interface{}
 
-	for _,v := range history {
+	for _, v := range history {
 		if _, ok := v.(map[string]interface{})["empty_layer"]; !ok {
-				tempHistory = append(tempHistory, v.(map[string]interface{}))
+			tempHistory = append(tempHistory, v.(map[string]interface{}))
 		}
 	}
 
 	imagesLayers := image.ManifestJson["Layers"].([]interface{})
 
-
-	for i, v := range imagesLayers{
+	for i, v := range imagesLayers {
 		layerDigest := strings.Split(v.(string), "/")[0]
 		l := image.Layers[layerDigest]
 		layerHistory := tempHistory[i]
 
-		if v, ok := layerHistory["author"]; ok{
+		if v, ok := layerHistory["author"]; ok {
 			l.Author = v.(string)
 		}
 		l.CreatedBy = layerHistory["created_by"].(string)
@@ -201,6 +193,5 @@ func GetHistory(image *images.Image) {
 		image.Layers[layerDigest] = l
 
 	}
-
 
 }
