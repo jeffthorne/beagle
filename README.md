@@ -14,3 +14,9 @@ open up to others.
 
 ##Version 0.001a output so far
 ![alt tag](v1.png?raw=true "v1")
+
+
+##Installation
+go get github.com/jeffthorne/beagle
+
+go run main.go /path_to_container_tar_file
