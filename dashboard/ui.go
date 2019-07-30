@@ -24,20 +24,26 @@ const (
 	EXABYTE
 )
 
+var styleBold = termui.Style{termui.ColorWhite, termui.ColorBlack, termui.ModifierBold}
+
 func UILayersWidget(image *images.Image, l *widgets.List) *widgets.List {
-	l.Title = "Layers"
+	l.Title = "[Layers]"
+	l.TitleStyle = styleBold
 	l.Rows = Layers(image)
 	//l.SetRect(0, 0, 150, 50)
 	l.TextStyle.Fg = termui.ColorWhite
 	l.SelectedRowStyle.Fg = termui.ColorBlue
 	l.SelectedRow = 1
+	l.BorderTop, l.BorderBottom, l.BorderLeft, l.BorderRight = true, false, false, false
 
 	return l
 }
 
 func UILayerDetailsWidget(selectedRow int, image *images.Image, p *widgets.Paragraph) *widgets.Paragraph {
 	p.Text = LayerParagraph(selectedRow, image)
-	p.Title = "Layer Details"
+	p.Title = "[Layer Details]"
+	p.TitleStyle = styleBold
+	p.BorderTop, p.BorderBottom, p.BorderLeft, p.BorderRight = true, false, false, false
 	return p
 }
 
@@ -56,7 +62,7 @@ func Layers(image *images.Image) []string {
 	count := 1
 	var b bytes.Buffer
 	w := tabwriter.NewWriter(&b, 7, 1, 1, ' ', tabwriter.AlignRight)
-	fmt.Fprintf(w, "\t%v\t\t%v\t", "Size", "Command")
+	fmt.Fprintf(w, "\t%v\t       %v\t", "[Size](mod:bold)", "[Command](mod:bold)")
 	w.Flush()
 	layers = append(layers, b.String())
 	b.Reset()
@@ -75,7 +81,7 @@ func Layers(image *images.Image) []string {
 
 		bs := ByteSize(l.Size)
 
-		fmt.Fprintf(w, "\t%s\t\t%s\t",bs, utils.StringMaxSize(l.CreatedBy[11:], 45))
+		fmt.Fprintf(w, "\t%s\t   %s\t",bs, utils.StringMaxSize(l.CreatedBy[11:], 45))
 		w.Flush()
 		layers = append(layers, b.String())
 		b.Reset()
@@ -123,30 +129,32 @@ func ByteSize(bytes uint64) string {
 
 	switch {
 	case bytes >= EXABYTE:
-		unit = " E"
+		unit = "E "
 		value = value / EXABYTE
 	case bytes >= PETABYTE:
-		unit = " P"
+		unit = "P "
 		value = value / PETABYTE
 	case bytes >= TERABYTE:
-		unit = " T"
+		unit = "T "
 		value = value / TERABYTE
 	case bytes >= GIGABYTE:
-		unit = " G"
+		unit = " G "
 		value = value / GIGABYTE
 	case bytes >= MEGABYTE:
 		unit = "MB"
 		value = value / MEGABYTE
 	case bytes >= KILOBYTE:
-		unit = " K"
+		unit = "K "
 		value = value / KILOBYTE
 	case bytes >= BYTE:
-		unit = " B"
+		unit = "B "
 	case bytes == 0:
 		return "0"
 	}
 
 	result := strconv.FormatFloat(value, 'f', 1, 64)
 	result = strings.TrimSuffix(result, ".0")
-	return result + unit
+	result = fmt.Sprintf("%4s %s ", result, unit)
+	return result
 }
+
