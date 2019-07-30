@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jeffthorne/beagle/images"
 )
@@ -158,6 +159,7 @@ func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 			}
 			layer.Size = uint64(binary.Size(v["layer.tar"]))
 
+
 			image.Layers[k] = layer
 
 		}
@@ -194,4 +196,36 @@ func GetHistory(image *images.Image) {
 
 	}
 
+}
+
+
+func StringMaxSize(str string, size int) string{
+
+	str = strings.ReplaceAll(str, "\t", "  ")
+	if(utf8.RuneCountInString(str) > size ){
+		str = str[:size]
+	}else{
+		diff := size - utf8.RuneCountInString(str)
+
+		for i := 0; i < diff; i++{
+			str += " "
+		}
+	}
+
+	return str
+}
+
+
+func ByteCountIEC(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB",
+		float64(b)/float64(div), "KMGTPE"[exp])
 }
