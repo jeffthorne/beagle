@@ -22,7 +22,8 @@ func (self *StatusBar) Draw(buf *ui.Buffer) {
 	self.Block.Draw(buf)
 
 	buf.SetString(
-		"Image: "+self.Image.Repository+"/"+self.Image.Name+":"+self.Image.Tag,
+		//"Image: "+self.Image.Repository+"/"+self.Image.Name+":"+self.Image.Tag,
+		"Image Format: Docker",
 		ui.NewStyle(ui.ColorWhite),
 		image.Pt(self.Inner.Min.X, self.Inner.Min.Y+(self.Block.Inner.Dy()/2)),
 	)

@@ -30,6 +30,7 @@ func main() {
 	i := dashboard.UIImageDetailsWidget(image, termHeight)
 	bar := dashboard.NewStatusBar(image)
 
+
 	grid := ui.NewGrid()
 	termWidth, termHeight := ui.TerminalDimensions()
 	grid.SetRect(0, 0, termWidth, termHeight-1)

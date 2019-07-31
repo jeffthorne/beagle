@@ -50,7 +50,9 @@ func UILayerDetailsWidget(selectedRow int, image *images.Image, p *widgets.Parag
 func UIImageDetailsWidget(image *images.Image, termHeight int) *widgets.Paragraph {
 	i := widgets.NewParagraph()
 	i.Text = ImageInfo(image)
-	i.Title = "Image Details"
+	i.Title = "[Image Details]"
+	i.TitleStyle = styleBold
+	i.BorderTop, i.BorderBottom, i.BorderLeft, i.BorderRight = true, false, false, false
 	return i
 }
 
@@ -81,7 +83,7 @@ func Layers(image *images.Image) []string {
 
 		bs := ByteSize(l.Size)
 
-		fmt.Fprintf(w, "\t%s\t   %s\t",bs, utils.StringMaxSize(l.CreatedBy[11:], 45))
+		fmt.Fprintf(w, "\t%s\t   %s\t", bs, utils.StringMaxSize(l.CreatedBy[11:], 45))
 		w.Flush()
 		layers = append(layers, b.String())
 		b.Reset()
@@ -115,13 +117,12 @@ func LayerParagraph(layerNumber int, image *images.Image) string {
 	layer := imagesLayers[layerNumber-1]
 	digest := strings.Split(layer.(string), "/")[0]
 	l := image.Layers[digest]
-	fmt.Fprintf(w, "\n[Digest](fg:green,mod:bold) -> %s\n\n\t[Command](fg:green,mod:bold)\n\t%s", l.DigestString, l.CreatedBy[11:])
+	fmt.Fprintf(w, "\n[Digest](fg:green,mod:bold)\n%s\n\n\t[Command](fg:green,mod:bold)\n\t%s", l.DigestString, l.CreatedBy[11:])
 	//b.WriteString("\n\t\tDigest: " + l.DigestString + "\n\n\tCommand:\n" + l.CreatedBy[11:])
 	w.Flush()
 	return b.String()
 
 }
-
 
 func ByteSize(bytes uint64) string {
 	unit := ""
@@ -157,4 +158,3 @@ func ByteSize(bytes uint64) string {
 	result = fmt.Sprintf("%4s %s ", result, unit)
 	return result
 }
-
