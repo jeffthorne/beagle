@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"github.com/jeffthorne/beagle/dashboard"
 	"github.com/jeffthorne/beagle/utils"
 	"github.com/jeffthorne/beagle/images"
 	"path/filepath"
@@ -33,9 +32,8 @@ func SetupUIWidgets(image *images.Image, app *tview.Application) (*tview.TextVie
 
 	LayerDetails(1, image, ld)
 	ImageDetailsWidget(id,image)
-	IntialFileSystem(image)
-	inialLayer, _ := image.InitialLayer()
-	LayerFileSystem(tv, image.Layers[inialLayer].FileSystem, layersWidget, app)
+	initialLayer, _ := image.InitialLayer()
+	LayerFileSystem(tv, image.Layers[initialLayer].FileSystem, layersWidget, app)
 
 	flex := tview.NewFlex().
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
@@ -97,7 +95,6 @@ func add(target *tview.TreeNode, path string, fs *afero.Fs)  {
 		panic(err)
 	}
 	for _, file := range files {
-		//fileName :=  fmt.Sprintf("%s     %s", file.Mode().String(), file.Name())
 		var b bytes.Buffer
 		w := tabwriter.NewWriter(&b, 13, 1, 2, ' ', tabwriter.AlignRight)
 		fmt.Fprintf(w, "%s\t   %5d %s", file.Mode().String(), file.Size(), file.Name())
@@ -116,15 +113,6 @@ func add(target *tview.TreeNode, path string, fs *afero.Fs)  {
 }
 
 
-
-
-func IntialFileSystem(image *images.Image){
-	manifestLayers := image.Layers
-
-	for k, _ := range manifestLayers{
-		fmt.Println("LAYER ID: ", k)
-	}
-}
 
 func LayersWidget(image *images.Image, ld *tview.TextView, tv *tview.TreeView, app *tview.Application) *tview.List{
 	box := tview.NewBox()
@@ -149,17 +137,14 @@ func LayersWidget(image *images.Image, ld *tview.TextView, tv *tview.TreeView, a
 	list.SetBackgroundColor(tcell.ColorDefault)
 	list.SetCurrentItem(1)
 	list.SetInputCapture(func(key *tcell.EventKey)*tcell.EventKey{
-		//fmt.Println("KEY RECEIVED: ", key.Name())
 		if key.Name() == "Tab"{
-			//fmt.Println("Changing focus")
-			//fmt.Println(app.GetFocus()) /
 			app.SetFocus(tv)
 			list.Blur()
 			return nil
-
 		}else {
 			return key
 		}
+
 	})
 
 	list.SetChangedFunc(func(index int, tableName string, t string, s rune){
@@ -196,13 +181,8 @@ func Layers(image *images.Image) []string {
 
 	for _, il := range imagesLayers1 {
 		digest := strings.Split(il.(string), "/")[0]
-		fmt.Printf("DIGEST:%s:\n", digest)
-		if _, ok := image.Layers[digest]; ok {
-			fmt.Printf("%d - %sin List:", count, digest)
-		}
-
 		l := image.Layers[digest]
-		bs := dashboard.ByteSize(l.Size)
+		bs := ByteSize(l.Size)
 
 		fmt.Fprintf(w, "\t%s\t   %s\t", bs, utils.StringMaxSize(l.CreatedBy[11:], 45))
 		w.Flush()
@@ -219,15 +199,14 @@ func ImageDetailsWidget(id *tview.TextView, image *images.Image){
 	id.SetBackgroundColor(tcell.ColorDefault)
 	id.SetBorder(true)
 	id.SetTitleAlign(tview.AlignLeft)
-	id.SetText(dashboard.ImageInfo(image))
+	id.SetText(ImageInfo(image))
 
 }
 
 
-
 func LayerDetails(selectedRow int, image *images.Image, ld *tview.TextView){
 	ld.SetDynamicColors(true)
-	ld.SetText(dashboard.LayerParagraph(selectedRow, image))
+	ld.SetText(LayerParagraph(selectedRow, image))
 	ld.SetBorder(true)
 	ld.SetTitle("Layer Details")
 	ld.SetTitleAlign(tview.AlignLeft)

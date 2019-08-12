@@ -14,7 +14,6 @@ import (
 	"os"
 	"strings"
 	"unicode/utf8"
-
 	"github.com/jeffthorne/beagle/images"
 )
 
@@ -51,6 +50,7 @@ func ProcessTar(filepath string) *images.Image {
 
 		filename := header.Name
 		filename = strings.TrimPrefix(filename, "./")
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			continue
@@ -62,7 +62,6 @@ func ProcessTar(filepath string) *images.Image {
 			}
 
 			if strings.Contains(filename, "json") {
-
 				if filename == "manifest.json" {
 					ParseManifest(f, &imageAnalyer.Image)
 					layerId = imageAnalyer.Image.Id
@@ -72,18 +71,19 @@ func ProcessTar(filepath string) *images.Image {
 					layerId = strings.Split(filename, ".")[0]
 					imageAnalyer.JsonFiles[layerId+".json"] = f
 				} else {
-					layerId = getLayerId(f)
+					// if filename is json in layer directory
+					// layerId is name of directory and id in config file.
+					layerId = strings.Split(filename, "/")[0]
 					imageAnalyer.JsonFiles[layerId+".json"] = f
 				}
-
 			} else {
-
 				if filename != "repositories" {
 					layerId = strings.Split(filename, "/")[0]
 					filename = strings.Split(filename, "/")[1]
 				}
 			}
 
+			//add all files in tar to imageAnalyzer layers map in corresponding layer
 			if layerId != "" {
 				if imageAnalyer.Layers[layerId] == nil {
 					imageAnalyer.Layers[layerId] = make(map[string][]byte)
@@ -98,22 +98,13 @@ func ProcessTar(filepath string) *images.Image {
 
 		}
 
-		if err != nil {
-			fmt.Println(err)
-		}
 	}
 
-	makeImageStruct(&imageAnalyer.Image, *imageAnalyer)
+	makeImageStruct(imageAnalyer)
 	return &imageAnalyer.Image
 
 }
 
-func getLayerId(f []byte) string {
-
-	var result map[string]interface{}
-	json.Unmarshal(f, &result)
-	return result["id"].(string)
-}
 
 func ParseConfig(f []byte, image *images.Image) {
 
@@ -144,7 +135,10 @@ func ParseManifest(f []byte, image *images.Image) {
 
 }
 
-func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
+func makeImageStruct(ia *images.ImageAnalyzer) {
+
+	image := &ia.Image
+
 
 	for k, v := range ia.Layers {
 
@@ -156,12 +150,13 @@ func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 			layer.Files = v
 			layer.Digest = sha256.Sum256(v["layer.tar"])
 			layer.DigestString = hex.EncodeToString(layer.Digest[:])
-			if image.Layers == nil {
-				image.Layers = make(map[string]*images.Layer)
-			}
 			layer.Size = uint64(binary.Size(v["layer.tar"]))
 			tr := tar.NewReader(bytes.NewReader(v["layer.tar"]))
 			filesystem.ProcessLayerFileSystem(tr, layer)
+
+			if image.Layers == nil {
+				image.Layers = make(map[string]*images.Layer)
+			}
 			image.Layers[k] = layer
 		}
 

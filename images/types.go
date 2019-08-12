@@ -2,7 +2,6 @@ package images
 
 import (
 	"errors"
-	"fmt"
 	"github.com/spf13/afero"
 	"strings"
 )
@@ -26,7 +25,6 @@ func (i Image)InitialLayer() (string, error){
 	for k, v := range layers{
 		if k == 0{
 			str := strings.Split(v.(string), "/")[0]
-			fmt.Println("STR&&&&&", str)
 			return str, nil
 		}
 	}

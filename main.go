@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// main takes on command argument. Full path to container .tar
+// main takes one command argument. Full path to container .tar
 func main() {
 
 	filePath := os.Args[1]
