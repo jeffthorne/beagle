@@ -12,6 +12,7 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/jeffthorne/beagle/images"
 	"github.com/jeffthorne/beagle/utils"
+
 )
 
 const (
@@ -24,7 +25,67 @@ const (
 	EXABYTE
 )
 
-var styleBold = termui.Style{termui.ColorWhite, termui.ColorBlack, termui.ModifierBold}
+var styleBold = termui.Style{termui.ColorWhite, termui.ColorClear, termui.ModifierBold}
+type nodeValue string
+func (nv nodeValue) String() string {
+	return string(nv)
+}
+
+func UITreeWidget(image *images.Image) *widgets.Tree{
+	t := widgets.NewTree()
+	t.Title = "[Layer Contents]"
+	t.TitleStyle = styleBold
+	t.WrapText = false
+	t.TextStyle.Fg = termui.ColorWhite
+	t.BorderTop, t.BorderBottom, t.BorderLeft, t.BorderRight = true, false, true, false
+	nodes := []*widgets.TreeNode{
+		{
+			Value: nodeValue("Key 1"),
+			Nodes: []*widgets.TreeNode{
+				{
+					Value: nodeValue("Key 1.1"),
+					Nodes: []*widgets.TreeNode{
+						{
+							Value: nodeValue("Key 1.1.1"),
+							Nodes: nil,
+						},
+						{
+							Value: nodeValue("Key 1.1.2"),
+							Nodes: nil,
+						},
+					},
+				},
+				{
+					Value: nodeValue("Key 1.2"),
+					Nodes: nil,
+				},
+			},
+		},
+		{
+			Value: nodeValue("Key 2"),
+			Nodes: []*widgets.TreeNode{
+				{
+					Value: nodeValue("Key 2.1"),
+					Nodes: nil,
+				},
+				{
+					Value: nodeValue("Key 2.2"),
+					Nodes: nil,
+				},
+				{
+					Value: nodeValue("Key 2.3"),
+					Nodes: nil,
+				},
+			},
+		},
+		{
+			Value: nodeValue("Key 3"),
+			Nodes: nil,
+		},
+	}
+	t.SetNodes(nodes)
+	return t
+}
 
 func UILayersWidget(image *images.Image, l *widgets.List) *widgets.List {
 	l.Title = "[Layers]"
@@ -32,7 +93,7 @@ func UILayersWidget(image *images.Image, l *widgets.List) *widgets.List {
 	l.Rows = Layers(image)
 	//l.SetRect(0, 0, 150, 50)
 	l.TextStyle.Fg = termui.ColorWhite
-	l.SelectedRowStyle.Fg = termui.ColorBlue
+	l.SelectedRowStyle.Fg = termui.ColorGreen
 	l.SelectedRow = 1
 	l.BorderTop, l.BorderBottom, l.BorderLeft, l.BorderRight = true, false, false, false
 
@@ -71,15 +132,15 @@ func Layers(image *images.Image) []string {
 
 	for _, il := range imagesLayers1 {
 		digest := strings.Split(il.(string), "/")[0]
-		fmt.Printf("DIGEST:%s:\n", digest)
+
 		if _, ok := image.Layers[digest]; ok {
 			fmt.Printf("%d - %sin List:", count, digest)
 		}
 
 		l := image.Layers[digest]
 
-		bc := utils.ByteCountIEC(int64(l.Size))
-		fmt.Println("BYTE COUNT****************************:", bc)
+		//bc := utils.ByteCountIEC(int64(l.Size))
+		//fmt.Println("BYTE COUNT****************************:", bc)
 
 		bs := ByteSize(l.Size)
 
@@ -117,7 +178,7 @@ func LayerParagraph(layerNumber int, image *images.Image) string {
 	layer := imagesLayers[layerNumber-1]
 	digest := strings.Split(layer.(string), "/")[0]
 	l := image.Layers[digest]
-	fmt.Fprintf(w, "\n[Digest](fg:green,mod:bold)\n%s\n\n\t[Command](fg:green,mod:bold)\n\t%s", l.DigestString, l.CreatedBy[11:])
+	fmt.Fprintf(w, "\n[green]Digest\n%s\n\n[green]Command\n%s", l.DigestString, l.CreatedBy[11:])
 	//b.WriteString("\n\t\tDigest: " + l.DigestString + "\n\n\tCommand:\n" + l.CreatedBy[11:])
 	w.Flush()
 	return b.String()

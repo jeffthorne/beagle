@@ -2,11 +2,13 @@ package utils
 
 import (
 	"archive/tar"
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jeffthorne/beagle/filesystem"
 	"io"
 	"io/ioutil"
 	"os"
@@ -150,18 +152,17 @@ func makeImageStruct(image *images.Image, ia images.ImageAnalyzer) {
 			image.Id = k
 			image.ManifestFile = v["manifest.json"]
 		} else if _, ok := v["layer.tar"]; ok {
-			layer := images.Layer{}
+			layer := images.NewLayer()
 			layer.Files = v
 			layer.Digest = sha256.Sum256(v["layer.tar"])
 			layer.DigestString = hex.EncodeToString(layer.Digest[:])
 			if image.Layers == nil {
-				image.Layers = make(map[string]images.Layer)
+				image.Layers = make(map[string]*images.Layer)
 			}
 			layer.Size = uint64(binary.Size(v["layer.tar"]))
-
-
+			tr := tar.NewReader(bytes.NewReader(v["layer.tar"]))
+			filesystem.ProcessLayerFileSystem(tr, layer)
 			image.Layers[k] = layer
-
 		}
 
 	}
